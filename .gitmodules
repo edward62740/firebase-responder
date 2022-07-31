@@ -1,0 +1,3 @@
+[submodule "magichome-python"]
+	path = magichome-python
+	url = https://github.com/adamkempenich/magichome-python
