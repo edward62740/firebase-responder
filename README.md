@@ -13,4 +13,4 @@ method_on: Method to call when trigger value is received\
 method_off: Method to call when trigger value is received and delay_ms is set\
 delay_ms: Delay in milliseconds
 
-Refer to main.py for example usage.
+Refer to main.py for example usage. Requires min. python 3.7 for some of the async functions.
