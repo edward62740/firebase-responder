@@ -1,16 +1,16 @@
-# I<sup>2</sup>DS Responder
-
-Provides methods to trigger smart home device generic on/off calls from Firebase RTDB listener values. After passing method handler() as Firebase listener callback,
-the added devices are asyncronously switched on/off based on the parameters:
-
-```python
- responder.add(ResponderDevice(trig, inversion, method_on, method_off, delay_ms))
-
+# Firebase Responder
+Used to perform predetermined function calls on IoT devices when a given value in Firebase RTDB is detected. Actions are performed asynchronously and delays/args can be used to customize responses.
+### Usage
+Initialize group of responses and pass handler() as callback function for Firebase listener.
 ```
-trig: Trigger value of the device\
-inversion: Inversion of the trigger value\
-method_on: Method to call when trigger value is received\
-method_off: Method to call when trigger value is received and delay_ms is set\
-delay_ms: Delay in milliseconds
+responder = ResponderGroup(1, 3, "ok")
+firebase_admin.db.reference('path/to/value').listen(responder.handler)
+```
 
-Refer to main.py for example usage. Requires min. python 3.7 for some of the async functions.
+Add device along with sequence of functions to be called, delays, args etc.
+```
+# led1 init goes here
+responder.add(ResponderCustom(3, 2, [led1.turn_on, led1.set_colour, led1.set_colour], [500, 500, 500],
+                             [None, [255, 0, 0], [0, 0, 30]]))
+responder.add(ResponderStatic("test", led2.turn_on, led2.turn_off, 1500)
+```
