@@ -1,4 +1,5 @@
 # Firebase Responder
+[![PyPI version](https://badge.fury.io/py/firebase-responder.svg)](https://badge.fury.io/py/firebase-responder) ![Build Test](https://github.com/edward62740/firebase-responder/actions/workflows/python-package.yml/badge.svg)<br>
 Used to perform predetermined function calls on IoT devices when a given value in Firebase RTDB is detected. Actions are performed asynchronously and delays/args can be used to customize responses.
 ### Usage
 Initialize group of responses and pass handler() as callback function for Firebase listener.
