@@ -43,33 +43,36 @@ class _ResponderBase(object):
     async def respond(self, data) -> bool:
         """ Calls callbacks passed during init as configured. Should only be called internally. """
         if data == int(self.trig):
-            if self.dev_type == DeviceTypes.DEVICE_STATIC:
-                print(f"Static device started response at {format(time.time())}")
-                self.cb1()
-                if type(self.cb2) is not None and self.delay_ms1 is not None:
-                    await asyncio.sleep(self.delay_ms1 / 1000)
-                    print(self.delay_ms1)
-                    self.cb2()
-                    print(f"Static device finished response at {format(time.time())}")
-
-            elif self.dev_type == DeviceTypes.DEVICE_FLASH:
-                print(f"Flashing device started response at {format(time.time())}")
-                for n in range(self.iterate):
+            try:
+                if self.dev_type == DeviceTypes.DEVICE_STATIC:
+                    print(f"Static device started response at {format(time.time())}")
                     self.cb1()
-                    await asyncio.sleep(self.delay_ms1 / 1000)
-                    self.cb2()
-                    await asyncio.sleep(self.delay_ms2 / 1000)
-                print(f"Flashing device finished response at {format(time.time())}")
+                    if type(self.cb2) is not None and self.delay_ms1 is not None:
+                        await asyncio.sleep(self.delay_ms1 / 1000)
+                        print(self.delay_ms1)
+                        self.cb2()
+                        print(f"Static device finished response at {format(time.time())}")
 
-            elif self.dev_type == DeviceTypes.DEVICE_CUSTOM:
-                print(f"Custom device started response at {format(time.time())}")
-                for cb, delay, args in zip(self.cblist, self.cbdelays, self.cbargs):
-                    if args is None:
-                        cb()
-                    else:
-                        cb(*args)
-                    await asyncio.sleep(delay / 1000)
-                print(f"Custom device finished response at {format(time.time())}")
+                elif self.dev_type == DeviceTypes.DEVICE_FLASH:
+                    print(f"Flashing device started response at {format(time.time())}")
+                    for n in range(self.iterate):
+                        self.cb1()
+                        await asyncio.sleep(self.delay_ms1 / 1000)
+                        self.cb2()
+                        await asyncio.sleep(self.delay_ms2 / 1000)
+                    print(f"Flashing device finished response at {format(time.time())}")
+
+                elif self.dev_type == DeviceTypes.DEVICE_CUSTOM:
+                    print(f"Custom device started response at {format(time.time())}")
+                    for cb, delay, args in zip(self.cblist, self.cbdelays, self.cbargs):
+                        if args is None:
+                            cb()
+                        else:
+                            cb(*args)
+                        await asyncio.sleep(delay / 1000)
+                    print(f"Custom device finished response at {format(time.time())}")
+            except Exception as e:
+                raise ResponderException(e.message)
             return True
         else:
             return False
@@ -83,10 +86,11 @@ class _ResponderBase(object):
 class ResponderGroup(object):
     """ ResponderGroup contains all instances of ResponderBase registered to the same FirebaseRTDB callback. """
 
-    def __init__(self, *defaults):
+    def __init__(self, *defaults) -> None:
         """ Initialize a ResponderGroup instance. Arguments are regarded as don't care values when the handler is
         called. Must be primitive types."""
         self.devices = []
+        self._is_running = False
         self.default = [default for default in defaults if _ResponderBase.is_primitive(default)]
 
     def add(self, device: _ResponderBase) -> bool:
@@ -96,24 +100,26 @@ class ResponderGroup(object):
         self.devices.append(device)
         return True
 
-    async def _task(self, event):
+    async def _task(self, event) -> None:
         """ Asynchronously run respond() method for each instance of ResponderBase. """
         print("began at {}".format(time.time()))
         await asyncio.wait([
             asyncio.create_task(device.respond(event.data))
             for device in self.devices
         ])
+        self._is_running = False
 
-    def handler(self, event):
+    def handler(self, event) -> None:
         """ Should be registered as callback for FirebaseRTDB listener. """
-        if event.data not in self.default:
+        if event.data not in self.default and not self._is_running:
+            self._is_running = True
             asyncio.run(self._task(event))
 
 
 class ResponderStatic(_ResponderBase):
     """ Inherited class to configure a static device. """
 
-    def __init__(self, trig, cb1: Callable, cb2=None, delay_ms=None):
+    def __init__(self, trig, cb1: Callable, cb2=None, delay_ms=None) -> None:
         """
         Initialize a ResponderBase instance as a static device
         :param trig value to trigger on
@@ -137,7 +143,7 @@ class ResponderStatic(_ResponderBase):
 class ResponderFlashing(_ResponderBase):
     """ Inherited class to configure a flashing device. """
 
-    def __init__(self, trig, cb1: Callable, cb2: Callable, delay_ms1=0, delay_ms2=0, iterate=1):
+    def __init__(self, trig, cb1: Callable, cb2: Callable, delay_ms1=0, delay_ms2=0, iterate=1) -> None:
         """
         Initialize a ResponderBase instance as a flashing device
         :param trig value to trigger on
@@ -160,14 +166,14 @@ class ResponderFlashing(_ResponderBase):
 class ResponderCustom(_ResponderBase):
     """ Inherited class to configure a custom device. """
 
-    def __init__(self, trig, iterate: int, cblist: list, cbdelays: list, cbargs: list):
+    def __init__(self, trig, iterate: int, cblist: list, cbdelays: list, cbargs: list) -> None:
         """
         Initialize a ResponderBase instance as a custom device. cblist, cbdelays, and cbargs must be lists of same length.
         :param trig value to trigger on
         :param iterate number of times to repeat
         :param cblist list of callbacks to call
-        :param cbdelays list of delays in ms between callbacks
-        :param cbargs list of arguments to pass to callbacks
+        :param cbdelays list of delays in ms between callbacks, None if no delay
+        :param cbargs list of arguments to pass to callbacks, None if no arg
         """
 
         if not self.is_primitive(trig):
@@ -181,6 +187,6 @@ class ResponderCustom(_ResponderBase):
 
 
 class ResponderException(Exception):
-    def __init__(self, message):
+    def __init__(self, message) -> None:
         self.message = message
         super().__init__(self.message)
