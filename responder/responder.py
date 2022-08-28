@@ -111,7 +111,7 @@ class ResponderGroup(object):
 
     def handler(self, event) -> None:
         """ Should be registered as callback for FirebaseRTDB listener. """
-        if event.data not in self.default and not self._is_running:
+        if (event.data not in self.default) and self._is_running is False:
             self._is_running = True
             asyncio.run(self._task(event))
 
