@@ -18,7 +18,7 @@ default_app = firebase_admin.initialize_app(cred, {
 
 
 def main():
-    rc = ResponderGroup(0, 1)
+    rc = ResponderGroup(30, 0, 1)
     rc.add(ResponderFlashing("1", sw1.turn_on, sw1.turn_off, 2000, 500, 2))
     rc.add(ResponderCustom(3, 2, [led1.turn_on, led1.set_colour, led1.set_colour], [500, 500, 500],
                                  [None, [255, 0, 0], [0, 0, 30]]))

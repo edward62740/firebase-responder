@@ -86,12 +86,14 @@ class _ResponderBase(object):
 class ResponderGroup(object):
     """ ResponderGroup contains all instances of ResponderBase registered to the same FirebaseRTDB callback. """
 
-    def __init__(self, *defaults) -> None:
+    def __init__(self, debounce_s:float, *defaults) -> None:
         """ Initialize a ResponderGroup instance. Arguments are regarded as don't care values when the handler is
         called. Must be primitive types."""
         self.devices = []
         self._is_running = False
         self.default = [default for default in defaults if _ResponderBase.is_primitive(default)]
+        self._debounce = 0.0
+        self.debounce = debounce_s
 
     def add(self, device: _ResponderBase) -> bool:
         """ Add a ResponderDevice instance to the list of devices. """
@@ -111,9 +113,12 @@ class ResponderGroup(object):
 
     def handler(self, event) -> None:
         """ Should be registered as callback for FirebaseRTDB listener. """
-        if (event.data not in self.default) and (self._is_running == False):
+        if (event.data not in self.default) and (self._is_running == False) and ((time.time() - self._debounce) > self.debounce):
             self._is_running = True
+            self._debounce = time.time()
             asyncio.run(self._task(event))
+        else:
+            print("DEBUG: SKIPPING")
 
 
 class ResponderStatic(_ResponderBase):
