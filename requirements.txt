@@ -1,1 +1,1 @@
-﻿firebase_admin==5.3.0
+﻿firebase_admin==6.0.0
